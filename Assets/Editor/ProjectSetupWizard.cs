@@ -18,7 +18,7 @@ namespace RetroSpaceInvader.Editor
     /// </summary>
     public static class ProjectSetupWizard
     {
-        [MenuItem("Retro Space Invader/Build & Setup Project")]
+        // [MenuItem] 제거: 이미 씬과 프리팹이 완성되었고, 런타임 자가 로드로 구동되므로 메뉴 노출 불필요
         public static void BuildProject()
         {
             Debug.Log("[ProjectSetupWizard] Starting complete project configuration...");
@@ -255,19 +255,23 @@ namespace RetroSpaceInvader.Editor
             livesLabelRt.anchoredPosition = new Vector2(-110f, -12f);
             livesLabelRt.sizeDelta = new Vector2(100f, 30f);
 
+            Sprite heartFullSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GameAssets/ui/heart_full.png");
+            Sprite heartEmptySprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/GameAssets/ui/heart_empty.png");
+
             Image[] heartImages = new Image[3];
             for (int i = 0; i < 3; i++)
             {
                 GameObject heartGo = new GameObject($"Heart_{i}");
                 heartGo.transform.SetParent(hudGo.transform, false);
                 Image img = heartGo.AddComponent<Image>();
-                img.color = new Color(1f, 0.2f, 0.35f);
+                img.sprite = heartFullSprite;
+                img.color = Color.white;
                 RectTransform rt = img.rectTransform;
                 rt.anchorMin = new Vector2(1f, 1f);
                 rt.anchorMax = new Vector2(1f, 1f);
                 rt.pivot = new Vector2(1f, 1f);
-                rt.anchoredPosition = new Vector2(-20f - (2 - i) * 26f, -16f);
-                rt.sizeDelta = new Vector2(20f, 20f);
+                rt.anchoredPosition = new Vector2(-20f - (2 - i) * 28f, -15f);
+                rt.sizeDelta = new Vector2(24f, 22f);
                 heartImages[i] = img;
             }
 
@@ -537,6 +541,8 @@ namespace RetroSpaceInvader.Editor
             uiMgr.scoreText = scoreText;
             uiMgr.highScoreText = highText;
             uiMgr.heartImages = heartImages;
+            uiMgr.heartFullSprite = heartFullSprite;
+            uiMgr.heartEmptySprite = heartEmptySprite;
             uiMgr.startPanel = startPanelGo;
             uiMgr.stageClearPanel = clearPanelGo;
             uiMgr.gameOverPanel = overPanelGo;

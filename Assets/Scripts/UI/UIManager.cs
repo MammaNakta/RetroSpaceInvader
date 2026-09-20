@@ -47,6 +47,56 @@ namespace RetroSpaceInvader.UI
         private void Awake()
         {
             Instance = this;
+            EnsureHeartSprites();
+        }
+
+        private void EnsureHeartSprites()
+        {
+            // Resources 폴더에서 하트 스프라이트 런타임 자동 로드
+            if (heartFullSprite == null)
+            {
+                heartFullSprite = Resources.Load<Sprite>("ui/heart_full");
+            }
+            if (heartEmptySprite == null)
+            {
+                heartEmptySprite = Resources.Load<Sprite>("ui/heart_empty");
+            }
+
+            // heartImages 슬롯이 비어있으면 씬에서 Heart_0, Heart_1, Heart_2 자동 탐색 및 바인딩
+            if (heartImages == null || heartImages.Length == 0)
+            {
+                List<Image> foundHearts = new List<Image>();
+                for (int i = 0; i < 3; i++)
+                {
+                    GameObject go = GameObject.Find($"Heart_{i}");
+                    if (go != null && go.TryGetComponent<Image>(out var img))
+                    {
+                        foundHearts.Add(img);
+                    }
+                }
+                if (foundHearts.Count > 0)
+                {
+                    heartImages = foundHearts.ToArray();
+                }
+            }
+
+            // 슬롯 크기(24x22) 및 초기 스프라이트 장착
+            if (heartImages != null && heartFullSprite != null)
+            {
+                for (int i = 0; i < heartImages.Length; i++)
+                {
+                    if (heartImages[i] != null)
+                    {
+                        heartImages[i].sprite = heartFullSprite;
+                        heartImages[i].color = Color.white;
+                        RectTransform rt = heartImages[i].rectTransform;
+                        if (rt != null)
+                        {
+                            rt.sizeDelta = new Vector2(24f, 22f);
+                        }
+                    }
+                }
+            }
         }
 
         public void UpdateHUD(int score, int highScore, int lives)
@@ -61,7 +111,14 @@ namespace RetroSpaceInvader.UI
                     if (heartImages[i] != null)
                     {
                         heartImages[i].sprite = (i < lives) ? heartFullSprite : heartEmptySprite;
-                        heartImages[i].color = (i < lives) ? new Color(1f, 0.2f, 0.35f) : new Color(0.35f, 0.35f, 0.45f);
+                        if (heartFullSprite != null && heartEmptySprite != null)
+                        {
+                            heartImages[i].color = Color.white;
+                        }
+                        else
+                        {
+                            heartImages[i].color = (i < lives) ? new Color(1f, 0.2f, 0.35f) : new Color(0.35f, 0.35f, 0.45f);
+                        }
                     }
                 }
             }

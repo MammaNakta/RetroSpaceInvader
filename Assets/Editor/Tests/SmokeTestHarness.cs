@@ -97,43 +97,6 @@ namespace RetroSpaceInvader.Tests
         }
 
 #if UNITY_EDITOR
-        [UnityEditor.MenuItem("Retro Space Invader/Run Verification Harness")]
-        public static void RunAllTestsFromMenu()
-        {
-            Debug.Log("[Verification Harness] Starting verification harness...");
-            SmokeTestHarness harness = new SmokeTestHarness();
-            int passed = 0;
-            int failed = 0;
-
-            void Execute(string name, System.Action action)
-            {
-                try
-                {
-                    action();
-                    Debug.Log($"<color=green>[PASS]</color> {name}");
-                    passed++;
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogError($"<color=red>[FAIL]</color> {name}: {ex.Message}");
-                    failed++;
-                }
-            }
-
-            Execute(nameof(harness.ScoreSystem_InvariantCheck_Passes), harness.ScoreSystem_InvariantCheck_Passes);
-            Execute(nameof(harness.RankingManager_Sanitize_InvalidData_Passes), harness.RankingManager_Sanitize_InvalidData_Passes);
-            Execute(nameof(harness.AudioManager_NullSafety_NoException_Passes), harness.AudioManager_NullSafety_NoException_Passes);
-
-            Debug.Log($"[Verification Harness] Complete. Passed: {passed}, Failed: {failed}");
-            if (failed > 0)
-            {
-                UnityEditor.EditorUtility.DisplayDialog("Verification Harness", $"Harness Failed! {failed} test(s) failed.", "OK");
-            }
-            else
-            {
-                UnityEditor.EditorUtility.DisplayDialog("Verification Harness", $"All {passed} Invariant & Smoke Tests Passed Successfully!", "OK");
-            }
-        }
 
         public static void RunAllTestsBatch()
         {

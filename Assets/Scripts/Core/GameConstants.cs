@@ -19,7 +19,7 @@ namespace RetroSpaceInvader.Core
         public const float PlayerHeight = 48f;
         public const float PlayerSpeed = 300f;              // 초당 300 픽셀 (5px * 60fps)
         public const int PlayerMaxLives = 3;
-        public const int PlayerMaxMissiles = 2;            // 화면 동시 최대 미사일 수
+        public const int PlayerMaxMissiles = 5;            // 화면 동시 최대 미사일 수
         public const float PlayerInvincibleDuration = 1.0f; // 피격 무적 시간 1초
         public const float PlayerStartY = -265f;            // 하단 플레이어 위치
 
