@@ -1,5 +1,6 @@
 # 👾 Retro Space Invader (레트로 스페이스 인베이더)
 
+[![Version](https://img.shields.io/badge/version-v0.1.0-brightgreen.svg)](https://github.com/MammaNakta/RetroSpaceInvader/releases/tag/v0.1.0)
 [![Unity 6](https://img.shields.io/badge/Unity-6000.3.22f1-blue.svg?logo=unity)](https://unity.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Git LFS](https://img.shields.io/badge/Git-LFS%20Optimized-orange.svg)](https://git-lfs.github.com/)
@@ -24,7 +25,7 @@
 | **`←` / `→`** 또는 **`A` / `D`** | 플레이어 우주선 좌우 이동 |
 | **`Space`** | 미사일 발사 (화면 내 최대 2발 동시 발사 제한) / 게임 시작 |
 | **`A - Z` (키보드 영문)** | 게임오버 시 3글자 랭킹 이니셜 입력 |
-| **`Backspace`** | 이니셜 한 글자 지우기 |
+| **`Backspace`** | 이니셜 한 글자 지우기 |1
 | **`Enter`** | 랭킹 등록 확정 |
 | **`R` / `Space`** | 스테이지 클리어 후 다음 단계 진행 / 게임오버 후 재도전 |
 
