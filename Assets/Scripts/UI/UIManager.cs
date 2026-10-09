@@ -17,6 +17,7 @@ namespace RetroSpaceInvader.UI
         [Header("HUD Elements")]
         public Text scoreText;
         public Text highScoreText;
+        public Text levelText;
         public Image[] heartImages;
         public Sprite heartFullSprite;
         public Sprite heartEmptySprite;
@@ -29,8 +30,15 @@ namespace RetroSpaceInvader.UI
         [Header("Stage Clear Texts")]
         public Text stageClearScoreText;
 
+        [Header("Level Up Banner (Optional UI or Auto GUI)")]
+        public Text levelUpBannerText;
+
+        private string _bannerMessage = "";
+        private float _bannerTimer = 0f;
+
         [Header("Game Over / Ranking Elements")]
         public Text gameOverFinalScoreText;
+        public Text restartPromptText;      // 메인 화면 복귀 및 안내 텍스트
         public Text[] initialSlotTexts;     // 3글자 이니셜 슬롯 (A A A)
         public Image[] initialSlotBorders;  // 테두리 하이라이트
         public Text initialGuideText;
@@ -41,8 +49,11 @@ namespace RetroSpaceInvader.UI
 
         private string _playerInitials = "";
         private bool _rankingSubmitted = false;
+        private bool _justSubmitted = false;
         private int _currentRank = 0;
         private float _cursorBlinkTimer = 0f;
+
+        public bool IsRankingSubmitted => _rankingSubmitted;
 
         private void Awake()
         {
@@ -99,10 +110,20 @@ namespace RetroSpaceInvader.UI
             }
         }
 
-        public void UpdateHUD(int score, int highScore, int lives)
+        public void UpdateHUD(int score, int highScore, int lives, int level = 1, int stage = 1)
         {
-            if (scoreText != null) scoreText.text = $"SCORE: {score:D6}";
-            if (highScoreText != null) highScoreText.text = $"HIGH: {highScore:D6}";
+            if (scoreText != null)
+            {
+                scoreText.text = $"SCORE: {score:D6}  <color=#00F0FF>LV.{level}</color> (ST.{stage})";
+            }
+            if (highScoreText != null)
+            {
+                highScoreText.text = $"HIGH: {highScore:D6}";
+            }
+            if (levelText != null)
+            {
+                levelText.text = $"LV.{level}";
+            }
 
             if (heartImages != null)
             {
@@ -124,6 +145,48 @@ namespace RetroSpaceInvader.UI
             }
         }
 
+        public void ShowLevelUpBanner(int newLevel)
+        {
+            string weaponName = newLevel switch
+            {
+                2 => "TWIN CANNON",
+                3 => "RAPID THRUSTER",
+                4 => "TRIPLE SPREAD",
+                5 => "PLASMA PIERCE",
+                _ => "SINGLE LASER"
+            };
+
+            _bannerMessage = $"★ LEVEL UP! [{weaponName}] ★";
+            _bannerTimer = 2.5f;
+
+            if (levelUpBannerText != null)
+            {
+                levelUpBannerText.text = _bannerMessage;
+                levelUpBannerText.gameObject.SetActive(true);
+            }
+        }
+
+        public void ShowMovementModeBanner(FleetMovementMode mode)
+        {
+            string modeName = mode switch
+            {
+                FleetMovementMode.GalagaDive => "GALAGA DIVE ATTACK",
+                FleetMovementMode.AlternatingSweep => "ALTERNATING SWEEP",
+                FleetMovementMode.SineWave => "SINE WAVE UNDULATION",
+                FleetMovementMode.AccordionPulse => "ACCORDION PULSE",
+                _ => "STANDARD"
+            };
+
+            _bannerMessage = $"⚡ FLEET TRAIT: [{modeName}] ⚡";
+            _bannerTimer = 2.5f;
+
+            if (levelUpBannerText != null)
+            {
+                levelUpBannerText.text = _bannerMessage;
+                levelUpBannerText.gameObject.SetActive(true);
+            }
+        }
+
         public void ShowStartScreen(bool show)
         {
             if (startPanel != null) startPanel.SetActive(show);
@@ -138,13 +201,28 @@ namespace RetroSpaceInvader.UI
             }
         }
 
+        private void EnsureRestartPrompt()
+        {
+            if (restartPromptText == null && gameOverPanel != null)
+            {
+                Transform t = gameOverPanel.transform.Find("RestartPrompt");
+                if (t != null)
+                {
+                    restartPromptText = t.GetComponent<Text>();
+                }
+            }
+        }
+
         public void ShowGameOverScreen(bool show, int finalScore)
         {
             if (gameOverPanel != null) gameOverPanel.SetActive(show);
             if (!show) return;
 
+            EnsureRestartPrompt();
+
             _playerInitials = "";
             _rankingSubmitted = false;
+            _justSubmitted = false;
             _currentRank = 0;
             _cursorBlinkTimer = 0f;
 
@@ -156,13 +234,28 @@ namespace RetroSpaceInvader.UI
             if (registeredInfoText != null) registeredInfoText.gameObject.SetActive(false);
             if (initialGuideText != null) initialGuideText.gameObject.SetActive(true);
 
+            if (restartPromptText != null)
+            {
+                restartPromptText.gameObject.SetActive(true);
+                restartPromptText.text = "[ ESC ] 키를 누르면 메인 화면으로 이동";
+            }
+
             UpdateInitialSlots();
             RefreshLeaderboardTable();
         }
 
         private void Update()
         {
-            if (GameManager.Instance.CurrentState != GameState.GameOver)
+            if (_bannerTimer > 0f)
+            {
+                _bannerTimer -= Time.deltaTime;
+                if (_bannerTimer <= 0f && levelUpBannerText != null)
+                {
+                    levelUpBannerText.gameObject.SetActive(false);
+                }
+            }
+
+            if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.GameOver)
                 return;
 
             _cursorBlinkTimer += Time.deltaTime;
@@ -172,10 +265,60 @@ namespace RetroSpaceInvader.UI
                 HandleInitialInput();
                 UpdateInitialSlots();
             }
+            else
+            {
+                // 랭킹 등록 완료 상태: 메인 화면 복귀 대기
+                if (_justSubmitted)
+                {
+                    // 등록 누른 직후 프레임 입력 무시 (결과 화면 확인 보장)
+                    if (Input.GetKeyUp(KeyCode.Return) || Input.GetKeyUp(KeyCode.KeypadEnter))
+                    {
+                        _justSubmitted = false;
+                    }
+                }
+                else
+                {
+                    if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) ||
+                        Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.R) ||
+                        Input.GetKeyDown(KeyCode.Escape))
+                    {
+                        GameManager.Instance.ReturnToTitle();
+                    }
+                }
+            }
+        }
+
+        private void OnGUI()
+        {
+            // 인스펙터에 levelUpBannerText가 없더라도 레트로 스타일로 즉시 표시
+            if (_bannerTimer > 0f && levelUpBannerText == null)
+            {
+                GUIStyle style = new GUIStyle(GUI.skin.box)
+                {
+                    fontSize = 18,
+                    fontStyle = FontStyle.Bold,
+                    alignment = TextAnchor.MiddleCenter
+                };
+                style.normal.textColor = Color.yellow;
+
+                float w = 400f;
+                float h = 45f;
+                float x = (Screen.width - w) * 0.5f;
+                float y = 50f;
+
+                GUI.Box(new Rect(x, y, w, h), _bannerMessage, style);
+            }
         }
 
         private void HandleInitialInput()
         {
+            // ESC: 랭킹 등록을 건너뛰고 메인 화면으로 이동
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                GameManager.Instance.ReturnToTitle();
+                return;
+            }
+
             // Backspace: 이전 글자 삭제
             if (Input.GetKeyDown(KeyCode.Backspace))
             {
@@ -191,6 +334,7 @@ namespace RetroSpaceInvader.UI
                 _playerInitials = name;
                 _currentRank = RankingManager.Instance.AddScore(name, GameManager.Instance.Score);
                 _rankingSubmitted = true;
+                _justSubmitted = true;
 
                 if (registeredInfoText != null)
                 {
@@ -200,6 +344,12 @@ namespace RetroSpaceInvader.UI
                         : "★ 랭킹 등록 완료! ★";
                 }
                 if (initialGuideText != null) initialGuideText.gameObject.SetActive(false);
+
+                if (restartPromptText != null)
+                {
+                    restartPromptText.gameObject.SetActive(true);
+                    restartPromptText.text = "[ SPACE ] 또는 [ ENTER ] 키를 눌러 메인 화면으로 이동";
+                }
 
                 RefreshLeaderboardTable();
             }

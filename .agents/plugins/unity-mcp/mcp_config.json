@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "mcp-unity": {
+      "command": "C:\\Program Files\\nodejs\\node.exe",
+      "args": [
+        "C:\\Users\\niji0\\Desktop\\antigravityStudy\\RetroSpaceInvader\\Library\\PackageCache\\com.gamelovers.mcp-unity@382a43a30f4d\\Server~\\build\\index.js"
+      ]
+    }
+  }
+}

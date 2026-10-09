@@ -1,112 +1,99 @@
-# GEMINI.md - Unity (C#) 프로젝트 개발 및 AI 에이전트 가이드라인
+# GEMINI.md - Unity (C#) 실전 개발 지침 및 3계층 검증 하네스 가이드
 
-본 문서는 **Unity (C#)** 프로젝트의 코드 스타일, 성능 최적화 원칙, 유지보수 가이드, 검증 하네스(NUnit / Unity Test Framework) 및 AI 에이전트의 행동 지침을 정의합니다.
-
----
-
-## 1. 개발자 페르소나: 20년차 프로 유니티/C# 게임 개발자의 실전 코딩 (Human-Centric Pragmatic C#)
-
-### 1.1 Over-Engineering 금지 (KISS & YAGNI 원칙)
-- **실전 중심 C# 코드**: 구현 목적에 비해 불필요하게 복잡한 디자인 패턴(과도한 제네릭 인터페이스 계층, 무거운 DI 프레임워크 남용 등)을 자제합니다.
-- **직관성과 가독성**: 명확한 C# 네이밍 컨벤션(PascalCase / camelCase)과 직관적인 제어 흐름 사용. 3년 뒤 동료 개발자나 미래의 내가 봐도 3초 만에 이해할 수 있는 명확하고 솔직한 코드를 작성합니다.
-- **MonoBehaviour와 순수 C# 클래스의 명확한 분리**: 데이터 및 비즈니스 로직(점수 계산, 데이터 파싱 등)은 순수 C# 클래스 또는 ScriptableObject로 처리하고, 연출 및 렌더링/입력만 MonoBehaviour로 분리합니다.
-
-### 1.2 Unity 60FPS Frame Budget & Zero-GC Alloc 최적화
-- **Update() 내 동적 할당(GC Alloc) 절대 금지**: `Update()`, `FixedUpdate()`, `LateUpdate()` 내부에서 `new` 객체 생성, 람다 클로저, LINQ, 문자열 더하기(`+`) 연산을 금지합니다.
-- **컴포넌트 및 참조 캐싱**: `GetComponent<T>()`, `Find()`, `Camera.main` 등은 `Awake()` 또는 `Start()` 시점에 필드 변수로 캐싱합니다.
-- **오브젝트 풀링 (Object Pooling)**: 탄환, 외계인, 파티클 등 빈번히 생성/파괴되는 GameObject는 `Instantiate()` / `Destroy()` 대신 Object Pool 패턴을 사용합니다.
-- **NonAlloc API 활용**: 물리 판정 시 `Physics2D.OverlapCircleNonAlloc`, `RaycastNonAlloc` 등 GC 배열 할당이 없는 NonAlloc API를 사용합니다.
-
-### 1.3 C# 네이밍 및 제어 흐름 컨벤션
-- **클래스 / 메서드 / Public 프로퍼티**: `PascalCase` (`PlayerController`, `CheckCollision()`, `CurrentScore`)
-- **Private 필드**: `_camelCase` (`_moveSpeed`, `_laserPrefab`)
-- **Inspector 노출**: private 변수를 Inspector에 노출할 경우 `[SerializeField] private float moveSpeed;` 형식을 선호합니다.
+본 문서는 **Unity (C#)** 프로젝트의 실용적이고 빠른 개발을 위한 코드 스타일, 성능 최적화 기준, 유지보수 원칙 및 **3계층 검증 하네스(3-Tier Verification Harness)** 체계를 정의합니다.
 
 ---
 
-## 2. 기존 코드베이스 보존 및 유지보수 원칙 (Codebase Integrity)
+## 1. 개발자 페르소나: 실용적이고 민첩한 모던 유니티 개발자 (Pragmatic & Agile Game Developer)
 
-### 2.1 임의의 구조 개편 및 대규모 리팩토링 금지
-- **기존 씬/스크립트 구조 존중**: 요청받지 않은 폴더 구조 변경, 씬 전환 아키텍처 통째로 갈아엎기는 하지 않습니다.
-- **최소 범위 수정 (Minimal Blast Radius)**: 버그 수정이나 기능 추가 시 해당 스크립트와 직접 연결된 클래스만 최소 범위로 수정합니다.
-- **기존 컨벤션 준수**: 기존 코드베이스의 C# 스타일(들여쓰기, 괄호 위치, 주석 방식)을 계승합니다.
+### 1.1 KISS & 실용성 우선 (Pragmatism over Perfectionism)
+- **가독성과 생산성의 균형**: 불필요한 제네릭 인터페이스 계층, 과도한 디자인 패턴(무거운 DI, 엔터프라이즈급 추상화 등)을 지양하고 직관적이고 읽기 쉬운 C# 코드를 작성합니다.
+- **KISS (Keep It Simple, Stupid) & YAGNI**: 지금 당장 필요한 기능에 집중하며, 미래의 모호한 확장성을 위해 코드를 미리 복잡하게 만들지 않습니다.
+- **MonoBehaviour와 순수 데이터의 합리적 분리**: 비즈니스 데이터나 계산 로직은 순수 C# 클래스나 `ScriptableObject`/`GameConstants`로 관리하고, 입력/연출/물리는 `MonoBehaviour`가 담당합니다.
 
-### 2.2 API 및 데이터 인터페이스 하위 호환성 유지
-- 기존 Public 메서드 시그니처나 Unity Event/Delegate 인터페이스를 변경할 때, 호출하는 다른 스크립트 및 Inspector 연결(Unity Event)에 영향이 없는지 확인합니다.
-- `ScriptableObject`나 데이터 클래스의 직렬화(Serialized) 필드 이름을 임의로 변경하여 Inspector 데이터가 유실되지 않도록 주의합니다.
+### 1.2 상식적인 성능 최적화 (Common-Sense Performance)
+- **핫패스(Hot Path) 주의**: 매 프레임 실행되는 `Update()`, `FixedUpdate()` 내부에서 눈에 띄는 대량의 `new` 객체 생성, 잦은 문자열 연결(`+`)을 지양합니다. (초기화나 이벤트 콜백 등 일회성 로직에서는 실용적인 람다나 편의 구문 사용 가능)
+- **컴포넌트 및 참조 캐싱**: `GetComponent<T>()`, `Camera.main` 등 빈번히 조회되는 컴포넌트는 `Awake()` / `Start()`에서 변수에 캐싱하여 사용합니다.
+- **오브젝트 풀링 (Object Pooling)**: 탄환, 폭발 이펙트처럼 1초에 수십 개씩 생성/파괴되는 요소는 가급적 풀링을 활용해 프레임 드랍을 방지합니다.
+
+### 1.3 C# 네이밍 및 인스펙터 컨벤션
+- **클래스 / 메서드 / 프로퍼티**: `PascalCase` (`PlayerController`, `TakeHit()`, `CurrentScore`)
+- **Private 필드**: `_camelCase` (`_lives`, `_moveTimer`)
+- **Inspector 노출 필드**: `[SerializeField] private float speed;` 또는 간결한 `public float speed;` 사용
 
 ---
 
-## 3. 필수 검증 하네스 및 테스트 지침 (Verification Harness)
+## 2. 기존 코드베이스 보존 및 점진적 개선 (Codebase Integrity)
 
-### 3.1 Unity C# 스모크 테스트 및 NUnit 검증 하네스 (EditMode / PlayMode Test)
-Unity Test Framework(NUnit)를 활용하여 CLI/Batchmode 환경에서도 핵심 로직 및 인바리언트를 검증할 수 있도록 테스트 하네스를 구축합니다.
+### 2.1 최소 영향 범위 (Minimal Blast Radius)
+- **불필요한 대규모 재작성 금지**: 버그 수정이나 새 기능 추가 시 요청받지 않은 기존 폴더 구조나 아키텍처를 임의로 갈아엎지 않습니다.
+- **점진적 개선**: 기존 파일의 코드 스타일(들여쓰기, 네이밍 규칙)을 존중하며 수정 대상과 직결된 코드만 정밀하게 변경합니다.
 
-```csharp
-// Editor/Tests/SmokeTestHarness.cs 예시 (Unity NUnit 스모크 테스트 하네스)
-using NUnit.Framework;
-using UnityEngine;
-using UnityEngine.TestTools;
-using System.Collections;
+### 2.2 직렬화 및 인터페이스 하위 호환성
+- `SerializeField` 변수명을 임의로 수정하여 Inspector에 할당된 기존 프리팹 데이터나 참조가 유실되지 않도록 주의합니다.
+- 사운드 클립(`AudioClip`)이나 스프라이트(`Sprite`)가 아직 할당되지 않은 상태에서도 에러 없이 기본 동작하거나 로그만 남기도록 **Null Safety Fallback**을 기본 적용합니다.
 
-public class SmokeTestHarness
-{
-    [Test]
-    public void ScoreSystem_InvariantCheck_Passes()
-    {
-        // 1. 점수 및 데이터 검증 테스트
-        int initialScore = 0;
-        int scoreToAdd = 100;
-        int result = initialScore + scoreToAdd;
-        
-        Assert.AreEqual(100, result, "Score calculation should match invariant.");
-    }
+---
 
-    [UnityTest]
-    public IEnumerator GameLoop_60Frames_NoException_Passes()
-    {
-        // 2. 60 프레임 동안 루프 구동 시 예외 미발생 검증 하네스
-        GameObject gameManagerObj = new GameObject("GameManager_Test");
-        // GameManager gameManager = gameManagerObj.AddComponent<GameManager>();
+## 3. 실전형 3계층 검증 하네스 체계 (3-Tier Verification Harness)
 
-        for (int i = 0; i < 60; i++)
-        {
-            yield return null; // 1프레임 대기
-        }
+형식적인 단위 테스트를 넘어, **개발 속도를 높이고 버그를 즉각 잡아내는 실전형 하네스**를 운영합니다.
 
-        Object.Destroy(gameManagerObj);
-        Debug.Log("[Harness SUCCESS] 60 frames smoke test passed without exception.");
-    }
-}
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Tier 1: 에디터 퀵 진단 (Editor Sanity Check)                │
+│ - 누락된 스크립트(Missing Component) & 레퍼런스 진단         │
+│ - 에디터 메뉴: Tools > Harness > Run Quick Sanity Check     │
+├─────────────────────────────────────────────────────────────┤
+│ Tier 2: 코어 로직 & 무결성 테스트 (Core Logic / Invariant)   │
+│ - 점수 계산, 랭킹 데이터 정제, Null Safety 로직 검증        │
+│ - 에디터 메뉴: Tools > Harness > Run Invariant Smoke Tests   │
+├─────────────────────────────────────────────────────────────┤
+│ Tier 3: 런타임 인게임 디버그/치트 (In-Game Runtime Debug)     │
+│ - F1(무적), F2(점수+1000), F3(적전멸), F4(피격), F5(배속)    │
+│ - 플레이테스트 및 엣지 케이스 즉시 재현                      │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 3.2 CLI Batchmode 헤드리스 실행 명령 (CI/Harness Execution)
-GUI를 띄우지 않고 Unity 테스트를 CLI에서 자동 실행하기 위한 명령 예시:
-```bash
-# Unity CLI Batchmode 헤드리스 실행 명령 예시
-Unity.exe -batchmode -nographics -projectPath . -runTests -testPlatform EditMode -testResults build/test-results.xml -logFile build/unity-test.log
-```
+### 3.1 Tier 1: 에디터 퀵 진단 하네스 (`EditorSanityCheckHarness.cs`)
+- **목적**: 씬이나 프리팹을 수정했을 때 컴포넌트가 깨지거나(Missing Script) 필수 싱글톤/에셋 참조가 비어있는지 1초 만에 검증.
+- **실행 방법**: 상단 메뉴 `Tools > Harness > Run Quick Sanity Check` (단축키: `Ctrl + Shift + S`)
+- **검증 항목**:
+  1. 씬 내 모든 오브젝트의 Missing Script 검사
+  2. `GameManager`, `UIManager` 등 필수 매니저 배치 및 의존성 연결 확인
+  3. `PlayerMissile`, `EnemyLaser`, `ExplosionEffect` 등 주요 프리팹 존재 여부 확인
 
-### 3.3 핵심 상태 인바리언트 체크 (State Invariant Verification)
-- **랭킹 및 데이터 저장**: JSON/PlayerPrefs 데이터 저장/로드 시 음수 값이나 null 데이터 예외 처리.
-- **오브젝트 풀 / 메모리 누수 검증**: 게임 플레이 중 생성된 스프라이트/탄환이 씬 전환 시 올바르게 풀로 반환되거나 Destroy되는지 확인.
+### 3.2 Tier 2: 코어 로직 & 무결성 테스트 하네스 (`SmokeTestHarness.cs`)
+- **목적**: 씬 렌더링과 무관한 순수 C# 게임 규칙, 점수 연산, 랭킹 데이터 저장/로드 및 Null 방어 로직의 무결성 검증.
+- **실행 방법**:
+  - **에디터 내부**: 상단 메뉴 `Tools > Harness > Run Invariant Smoke Tests` 클릭
+  - **CLI 배치모드(CI)**:
+    ```bash
+    Unity.exe -batchmode -nographics -projectPath . -executeMethod RetroSpaceInvader.Tests.SmokeTestHarness.RunAllTestsBatch -logFile unity-harness.log
+    ```
+- **검증 항목**:
+  1. 점수 연산 및 음수 방어 인바리언트
+  2. 랭킹 데이터 정제(Null/공백 이름, 음수 점수 자동 방어 및 내림차순 정렬)
+  3. 에셋 미할당 시 `AudioManager` 예외 미발생 검증
 
-### 3.4 에셋 및 세이프티 펄백 (Asset Fallback Safety)
-- AudioSource/Sound, Sprite 에셋이 Assign되지 않은 경우 `NullReferenceException`이 발생하지 않도록 `if (_audioSource != null)` 검사 및 기본 Fallback 처리를 보장합니다.
+### 3.3 Tier 3: 런타임 인게임 디버그 하네스 (`RuntimeDebugHarness.cs`)
+- **목적**: 게임 실행 중 특정 상황(보스전, 게임오버, 스테이지 클리어)을 테스트하기 위해 번거롭게 수동 플레이를 오래 하지 않고 핫키로 즉시 재현.
+- **동작 방식**: `UNITY_EDITOR` 및 `DEVELOPMENT_BUILD`에서 씬 시작 시 자동 초기화(수동 배치 불필요).
+- **디버그 단축키**:
+  - `F1`: **무적 모드(God Mode)** 토글 (피격 무시)
+  - `F2`: **점수 즉시 지급** (+1000점)
+  - `F3`: **적 편대 전멸** (스테이지 클리어 즉시 전환 테스트)
+  - `F4`: **플레이어 즉시 피격** (목숨 감소 및 게임오버 전이 테스트)
+  - `F5`: **게임 배속 조절** (1.0x → 2.0x → 5.0x → 0.5x)
+  - `F12`: 디버그 HUD 화면 표시/숨김 토글
 
 ---
 
-## 4. AI 에이전트 제안 수칙 및 추가 권장사항 (Agent Best Practices)
+## 4. AI 에이전트 작업 수칙
 
-### 4.1 수정 전 맥락 파악 (Look Before You Leap)
-- 스크립트를 변경하기 전 관련 C# 클래스와 ScriptableObject 정의, Inspector 연결 의존성을 확인 후 작업합니다.
-
-### 4.2 수정 후 구동 검증 의무화 (Always Verify Runtime)
-- 코드를 추가/수정한 후에는 스크립트 컴파일 오류(C# Syntax/Semantic error)가 없는지 확인하고 테스트 스크립트 구동을 검증합니다.
-
-### 4.3 데이터 기반 설계 (ScriptableObject & Data-Driven)
-- 이속, 공격력, 쿨타임, 색상 등 하드코딩 수치는 코드에 직접 적지 않고 `ScriptableObject` 또는 `Constants` 클래스에 집약 관리합니다.
-
-### 4.4 디버깅 로깅 준수
-- 단순 `catch (Exception) {}` 형태의 빈 예외 처리를 금지합니다.
-- 예외 발생 시 `Debug.LogWarning()` 또는 `Debug.LogError()`로 원인을 명확히 추적할 수 있도록 로그를 남깁니다.
+1. **사전 파악 (Read First)**: 코드를 수정하기 전 관련 클래스 필드와 Inspector 연결 구조를 확인합니다.
+2. **사후 검증 (Verify Fast)**:
+   - 스크립트 작성/수정 후 컴파일 에러가 없는지 확인합니다.
+   - 씬/프리팹 관련 작업 시 **Tier 1 (Run Quick Sanity Check)** 을 확인합니다.
+   - 로직/데이터 관련 작업 시 **Tier 2 (Run Invariant Smoke Tests)** 를 실행하여 회귀 버그를 방지합니다.
+3. **명확한 로깅**: 빈 catch 블록(`catch (Exception) {}`)을 지양하고, 예외 상황 시 `Debug.LogWarning` 또는 `Debug.LogError`로 원인을 명시합니다.

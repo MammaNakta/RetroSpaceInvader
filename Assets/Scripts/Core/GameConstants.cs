@@ -23,13 +23,15 @@ namespace RetroSpaceInvader.Core
         public const float PlayerInvincibleDuration = 1.0f; // 피격 무적 시간 1초
         public const float PlayerStartY = -265f;            // 하단 플레이어 위치
 
-        // 3. 미사일 및 탄환 수치
-        public const float MissileWidth = 12f;
-        public const float MissileHeight = 28f;
+        // 3. 미사일 및 탄환 수치 (히트박스 슬림화 적용)
+        public const float MissileWidth = 10f;
+        public const float MissileHeight = 24f;
         public const float MissileSpeed = 540f;             // 초당 540 픽셀 (9px * 60fps)
 
-        public const float EnemyLaserWidth = 14f;
-        public const float EnemyLaserHeight = 28f;
+        public const float EnemyLaserWidth = 10f;
+        public const float EnemyLaserHeight = 20f;
+        public const float EnemyLaserHitboxWidth = 6f;      // 회피감 극대화를 위한 중심 코어 피탄 폭
+        public const float EnemyLaserHitboxHeight = 14f;    // 중심 코어 피탄 높이
         public const float EnemyLaserSpeed = 240f;          // 초당 240 픽셀 (4px * 60fps)
 
         // 4. 외계인 편대 수치
@@ -73,6 +75,35 @@ namespace RetroSpaceInvader.Core
         public static readonly Color ColorEnemyLaser = new Color(255f / 255f, 60f / 255f, 60f / 255f);
         public static readonly Color ColorGold = new Color(255f / 255f, 215f / 255f, 0f / 255f);
         public static readonly Color ColorCyan = new Color(0f / 255f, 240f / 255f, 255f / 255f);
+
+        // 7. 플레이어 레벨업 임계 점수 (Level 1~5)
+        public static readonly int[] LevelThresholds = { 0, 600, 1500, 2800, 4500 };
+        public const int MaxPlayerLevel = 5;
+
+        public static int GetLevelForScore(int score)
+        {
+            for (int i = LevelThresholds.Length - 1; i >= 0; i--)
+            {
+                if (score >= LevelThresholds[i])
+                    return i + 1;
+            }
+            return 1;
+        }
+    }
+
+    public enum AlienTier
+    {
+        Tier1_Grunt,      // 1 HP, 단발 직선 투하 (10점)
+        Tier2_Veteran,    // 1 HP, 2점사 연속 투하 (20점)
+        Tier3_Commander   // 2 HP, 3방향 확산 투하 (30점)
+    }
+
+    public enum FleetMovementMode
+    {
+        GalagaDive,         // 갤러그식 급강하 요격 다이브
+        AlternatingSweep,   // 행별 엇갈림 교차 기동
+        SineWave,           // 사인파 파도 유영
+        AccordionPulse      // 아코디언 신축 펄스
     }
 
     public enum GameState

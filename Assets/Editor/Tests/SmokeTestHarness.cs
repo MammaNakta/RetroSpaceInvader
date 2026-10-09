@@ -96,7 +96,90 @@ namespace RetroSpaceInvader.Tests
             Debug.Log("[Harness SUCCESS] 60 frames smoke test passed without exception.");
         }
 
+        [Test]
+        public void PlayerLevel_Thresholds_Passes()
+        {
+            // 플레이어 레벨 계산 인바리언트 검증
+            Assert.AreEqual(1, GameConstants.GetLevelForScore(0));
+            Assert.AreEqual(1, GameConstants.GetLevelForScore(599));
+            Assert.AreEqual(2, GameConstants.GetLevelForScore(600));
+            Assert.AreEqual(2, GameConstants.GetLevelForScore(1499));
+            Assert.AreEqual(3, GameConstants.GetLevelForScore(1500));
+            Assert.AreEqual(4, GameConstants.GetLevelForScore(2800));
+            Assert.AreEqual(5, GameConstants.GetLevelForScore(4500));
+            Assert.AreEqual(5, GameConstants.GetLevelForScore(999999));
+        }
+
+        [Test]
+        public void AlienTier_HpScore_Passes()
+        {
+            // 외계인 티어별 스펙 인바리언트 검증
+            Assert.AreEqual(10, GameConstants.ScoreAlienBottom);
+            Assert.AreEqual(20, GameConstants.ScoreAlienMiddle);
+            Assert.AreEqual(30, GameConstants.ScoreAlienTop);
+            Assert.AreEqual(5, GameConstants.MaxPlayerLevel);
+        }
+
+        [Test]
+        public void GameManager_State_ReturnToTitle_Passes()
+        {
+            GameObject gmGo = new GameObject("Test_GameManager");
+            try
+            {
+                GameManager gm = gmGo.AddComponent<GameManager>();
+                gm.ReturnToTitle();
+                Assert.AreEqual(GameState.Start, gm.CurrentState, "ReturnToTitle must transition state to Start.");
+                Assert.AreEqual(0, gm.Score, "ReturnToTitle must reset score to 0.");
+                Assert.AreEqual(1, gm.Stage, "ReturnToTitle must reset stage to 1.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(gmGo);
+            }
+        }
+
 #if UNITY_EDITOR
+        [UnityEditor.MenuItem("Tools/Harness/Run Invariant Smoke Tests", priority = 20)]
+        public static void RunAllTestsInEditor()
+        {
+            Debug.Log("<color=cyan><b>[Harness: Tier 2] Running Invariant Smoke Tests in Editor...</b></color>");
+            SmokeTestHarness harness = new SmokeTestHarness();
+            int failed = 0;
+            int passed = 0;
+
+            void ExecuteTest(string name, System.Action action)
+            {
+                try
+                {
+                    action();
+                    Debug.Log($"<color=lime>[PASS]</color> {name}");
+                    passed++;
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"<color=red>[FAIL]</color> {name}: {ex.Message}\n{ex.StackTrace}");
+                    failed++;
+                }
+            }
+
+            ExecuteTest(nameof(harness.ScoreSystem_InvariantCheck_Passes), harness.ScoreSystem_InvariantCheck_Passes);
+            ExecuteTest(nameof(harness.RankingManager_Sanitize_InvalidData_Passes), harness.RankingManager_Sanitize_InvalidData_Passes);
+            ExecuteTest(nameof(harness.AudioManager_NullSafety_NoException_Passes), harness.AudioManager_NullSafety_NoException_Passes);
+            ExecuteTest(nameof(harness.PlayerLevel_Thresholds_Passes), harness.PlayerLevel_Thresholds_Passes);
+            ExecuteTest(nameof(harness.AlienTier_HpScore_Passes), harness.AlienTier_HpScore_Passes);
+            ExecuteTest(nameof(harness.GameManager_State_ReturnToTitle_Passes), harness.GameManager_State_ReturnToTitle_Passes);
+
+            if (failed == 0)
+            {
+                Debug.Log($"<color=lime><b>[Harness: Tier 2 Complete] All {passed} tests passed successfully!</b></color>");
+                UnityEditor.EditorUtility.DisplayDialog("Smoke Tests Passed", $"모든 스모크/인바리언트 테스트({passed}개)가 성공적으로 통과했습니다.", "확인");
+            }
+            else
+            {
+                Debug.LogError($"<color=red><b>[Harness: Tier 2 Complete] {failed} test(s) failed out of {passed + failed}.</b></color>");
+                UnityEditor.EditorUtility.DisplayDialog("Smoke Tests Failed", $"{failed}개의 테스트가 실패했습니다. 콘솔 창을 확인하세요.", "확인");
+            }
+        }
 
         public static void RunAllTestsBatch()
         {
@@ -121,6 +204,9 @@ namespace RetroSpaceInvader.Tests
             ExecuteBatch(nameof(harness.ScoreSystem_InvariantCheck_Passes), harness.ScoreSystem_InvariantCheck_Passes);
             ExecuteBatch(nameof(harness.RankingManager_Sanitize_InvalidData_Passes), harness.RankingManager_Sanitize_InvalidData_Passes);
             ExecuteBatch(nameof(harness.AudioManager_NullSafety_NoException_Passes), harness.AudioManager_NullSafety_NoException_Passes);
+            ExecuteBatch(nameof(harness.PlayerLevel_Thresholds_Passes), harness.PlayerLevel_Thresholds_Passes);
+            ExecuteBatch(nameof(harness.AlienTier_HpScore_Passes), harness.AlienTier_HpScore_Passes);
+            ExecuteBatch(nameof(harness.GameManager_State_ReturnToTitle_Passes), harness.GameManager_State_ReturnToTitle_Passes);
 
             Debug.Log($"[Batch Verification Harness] Complete. Failed: {failed}");
             UnityEditor.EditorApplication.Exit(failed == 0 ? 0 : 1);

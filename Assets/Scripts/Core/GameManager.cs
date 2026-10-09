@@ -62,11 +62,7 @@ namespace RetroSpaceInvader.Core
                     break;
 
                 case GameState.GameOver:
-                    // 랭킹 등록 후 재시작 가능
-                    if (Input.GetKeyDown(KeyCode.R) || Input.GetKeyDown(KeyCode.Space))
-                    {
-                        StartNewGame();
-                    }
+                    // 랭킹 등록 및 메인 화면 복귀는 UIManager에서 제어
                     break;
             }
         }
@@ -78,26 +74,63 @@ namespace RetroSpaceInvader.Core
             UIManager.Instance?.ShowStartScreen(newState == GameState.Start);
             UIManager.Instance?.ShowStageClearScreen(newState == GameState.StageClear, Score);
             UIManager.Instance?.ShowGameOverScreen(newState == GameState.GameOver, Score);
-            UIManager.Instance?.UpdateHUD(Score, HighScore, player != null ? player.Lives : GameConstants.PlayerMaxLives);
+            RefreshHUD();
+        }
+
+        public void RefreshHUD()
+        {
+            int lives = player != null ? player.Lives : GameConstants.PlayerMaxLives;
+            int level = player != null ? player.Level : 1;
+            UIManager.Instance?.UpdateHUD(Score, HighScore, lives, level, Stage);
         }
 
         public void StartNewGame()
         {
+            ClearProjectiles();
             Score = 0;
             Stage = 1;
             HighScore = RankingManager.Instance.GetHighScore();
 
-            if (player != null) player.ResetPlayer(GameConstants.PlayerMaxLives);
+            if (player != null) player.ResetPlayer(GameConstants.PlayerMaxLives, 1);
             if (fleetManager != null) fleetManager.CreateFleet();
 
             SetState(GameState.Playing);
+        }
+
+        public void ReturnToTitle()
+        {
+            ClearProjectiles();
+            Score = 0;
+            Stage = 1;
+            HighScore = RankingManager.Instance.GetHighScore();
+
+            if (player != null) player.ResetPlayer(GameConstants.PlayerMaxLives, 1);
+            if (fleetManager != null) fleetManager.ClearFleet();
+
+            SetState(GameState.Start);
+        }
+
+        public void ClearProjectiles()
+        {
+            PlayerMissile[] missiles = FindObjectsOfType<PlayerMissile>();
+            for (int i = 0; i < missiles.Length; i++)
+            {
+                if (missiles[i] != null) Destroy(missiles[i].gameObject);
+            }
+
+            EnemyLaser[] lasers = FindObjectsOfType<EnemyLaser>();
+            for (int i = 0; i < lasers.Length; i++)
+            {
+                if (lasers[i] != null) Destroy(lasers[i].gameObject);
+            }
         }
 
         public void AdvanceToNextStage()
         {
             Stage++;
             int savedLives = player != null ? player.Lives : GameConstants.PlayerMaxLives;
-            if (player != null) player.ResetPlayer(savedLives);
+            int savedLevel = player != null ? player.Level : 1;
+            if (player != null) player.ResetPlayer(savedLives, savedLevel);
             if (fleetManager != null) fleetManager.CreateFleet();
 
             SetState(GameState.Playing);
@@ -110,12 +143,20 @@ namespace RetroSpaceInvader.Core
             {
                 HighScore = Score;
             }
-            UIManager.Instance?.UpdateHUD(Score, HighScore, player != null ? player.Lives : 0);
+
+            // 점수 기반 레벨업 체크
+            int targetLevel = GameConstants.GetLevelForScore(Score);
+            if (player != null && targetLevel > player.Level)
+            {
+                player.SetLevel(targetLevel);
+            }
+
+            RefreshHUD();
         }
 
         public void OnPlayerHit(int remainingLives)
         {
-            UIManager.Instance?.UpdateHUD(Score, HighScore, remainingLives);
+            RefreshHUD();
         }
 
         public void TriggerStageClear()

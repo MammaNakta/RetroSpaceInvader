@@ -552,6 +552,7 @@ namespace RetroSpaceInvader.Editor
             uiMgr.initialSlotBorders = initialBorders;
             uiMgr.initialGuideText = guideText;
             uiMgr.registeredInfoText = regInfo;
+            uiMgr.restartPromptText = restartText;
             uiMgr.rankRowsText = rows;
         }
     }
